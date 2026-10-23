@@ -15,7 +15,9 @@ Configuration comes only from the environment, the same variables the samples do
     MFX_SYMBOL         one of its instruments, in the broker's own name
 
 ``--read-only`` (the default) runs the samples that change nothing: quotes, history, the live
-account, a position size computed and not placed, and the webhook receiver's self-check.
+account, a position size computed and not placed, and the webhook receiver's self-check. It never
+creates anything, so a read-only key is enough: live prices follow a subscription that already
+exists for the symbol (a standing one on the CI tenant), rather than creating one.
 ``--all`` adds the samples that create and retire terminals and log in to a broker; those also need
 MFX_BROKER_LOGIN, MFX_BROKER_PASSWORD and MFX_BROKER_SERVER for a demo account.
 """
@@ -40,7 +42,7 @@ def read_only(env: dict[str, str]) -> list[tuple[str, list[str]]]:
     return [
         ("webhook_receiver.py", ["--self-check"]),
         ("prices_live.py", ["--server-id", env["MFX_SERVER_ID"], "--symbol", env["MFX_SYMBOL"],
-                            "--seconds", "20", "--subscribe", *base]),
+                            "--seconds", "20", *base]),
         ("price_history.py", ["--broker-id", env["MFX_BROKER_ID"], "--server-id",
                               env["MFX_SERVER_ID"], "--symbol", env["MFX_SYMBOL"], *base]),
         ("account_live.py", ["--terminal", env["MFX_TERMINAL_ID"], "--seconds", "20", *base]),

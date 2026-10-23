@@ -117,8 +117,11 @@ async def watchdog(fresh: Freshness, live: LiveAccount) -> None:
             print(f"! stale - nothing for {quiet:.0f}s with positions open; these are not live")
 
 
-async def follow(client: MfxClient, terminal_id: str, seconds: float = 0) -> int:
-    """Follow until stopped, or for ``seconds``; the number of messages applied."""
+async def follow(
+    client: MfxClient, terminal_id: str, seconds: float = 0, heard: list[int] | None = None
+) -> int:
+    """Follow until stopped, or for ``seconds``; the number of messages applied. ``heard``, when
+    given, is kept up to date as messages arrive, so a caller that stops this early still knows."""
     channel = Channel.account(terminal_id)
     live = LiveAccount(terminal_id)
     started = time.monotonic()
@@ -147,6 +150,8 @@ async def follow(client: MfxClient, terminal_id: str, seconds: float = 0) -> int
                 # the keep-alive is for: it is how a still account proves it is still connected.
                 fresh.arrived()
                 applied += 1
+                if heard is not None:
+                    heard[0] = applied
                 elapsed = int(time.monotonic() - started)
                 kind = "snapshot" if updated.seq == updated.base else "marks   "
                 print(f"[{elapsed:>5}s] {kind} seq={updated.seq} {figures_line(updated)}")
@@ -174,12 +179,14 @@ def main() -> None:
         async with MfxClient(args.base_url, args.key_id, key) as client:
             if not args.seconds:
                 return await follow(client, args.terminal)
-            # A still account sends a keep-alive every few seconds, so a bounded run that heard
-            # nothing at all is a fault worth a non-zero exit.
+            # The snapshot arrives on subscribe, so a bounded run that heard nothing at all is a fault
+            # worth a non-zero exit. An account with nothing open may send nothing after it, so the
+            # run ends on time whether or not more arrives, keeping what it heard.
+            heard = [0]
             with contextlib.suppress(TimeoutError):
-                async with asyncio.timeout(args.seconds + 15):
-                    return await follow(client, args.terminal, args.seconds)
-            return 0
+                async with asyncio.timeout(args.seconds):
+                    return await follow(client, args.terminal, args.seconds, heard)
+            return heard[0]
 
     try:
         heard = asyncio.run(run())
