@@ -73,7 +73,8 @@ jobs:
           fi
       - name: Install the SDK the samples use
         if: steps.key.outputs.configured == 'true'
-        run: python -m pip install --quiet "mfx-sdk>=0.9.15"
+        # The exact versions in ci/requirements.txt, each checked against its hash.
+        run: python -m pip install --quiet --require-hashes -r ci/requirements.txt
       - name: Run the read-only samples against dev
         if: steps.key.outputs.configured == 'true'
         run: python ci/run_samples.py

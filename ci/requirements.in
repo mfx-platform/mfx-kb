@@ -1,0 +1,3 @@
+# What the knowledge base samples run with in CI. Compiled with hashes into requirements.txt:
+#   uv pip compile --universal --generate-hashes --python-version 3.12 ci/requirements.in -o ci/requirements.txt
+mfx-sdk==0.9.18
