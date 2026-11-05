@@ -16,7 +16,7 @@ certifi==2026.10.19 \
     # via
     #   httpcore
     #   httpx
-cffi==2.1.1 ; platform_python_implementation != 'PyPy' \
+cffi==2.1.1 \
     --hash=sha256:046bfc24911b37851ee1b51aab8bffe713d89c68c6a057b09484ce9fd5f69b4e \
     --hash=sha256:06c72bb76605a4b0cd0aad6930b69d4baf7dd5d806cfc409b824191099700e66 \
     --hash=sha256:0beceaabe56af686895136a2de78db54ecd8e4046b236b8fd6d6cb61389e9bf2 \
@@ -197,11 +197,11 @@ idna==3.20 \
     # via
     #   anyio
     #   httpx
-mfx-sdk==0.9.18 \
-    --hash=sha256:796410ecdcbeb7941d7165508fc337f6a2551bbae66d0118590803136920bb37 \
-    --hash=sha256:f088869f3c731670be5290325073778a78d1eccc6e399f9d66736f453c60ca3f
-    # via -r ci/requirements.in
-pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy' \
+mfx-sdk==0.10.0 \
+    --hash=sha256:2982e1d893a12a423e8ecbc213c423e26f49dd1aea48cae9f68230bc9f8eb952 \
+    --hash=sha256:6da8f313497e33c974684dd87ce595ae015179069310faf2199cfc79c0d0abd8
+    # via -r requirements.in
+pycparser==3.12 \
     --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e \
     --hash=sha256:f03387877eab82ce01bbdfd0ba7252ee55a90b1c708d5129e2ce915475cf1db6
     # via cffi
@@ -213,10 +213,6 @@ six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
     # via python-dateutil
-typing-extensions==4.16.0 ; python_full_version < '3.15' \
-    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
-    --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
-    # via anyio
 tzdata==2026.5 \
     --hash=sha256:8cc73c0a0bfca7dbfa59235d60b2eff82231dee33f53d206db1acd9173cfc0a7 \
     --hash=sha256:b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac
