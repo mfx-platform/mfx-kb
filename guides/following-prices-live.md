@@ -1,3 +1,10 @@
+---
+title: "Following prices live"
+topic: market-data
+order: 10
+summary: "Subscribe to your broker's prices tick by tick, and know when they have stopped."
+---
+
 # Following prices live
 
 > The runnable half of this page is [`samples/prices_live.py`](../samples/prices_live.py), which
@@ -40,6 +47,24 @@ sent them. Build a `Decimal` from them; see [Sizing a position](sizing-a-positio
 
 You get every tick, once. If several of your terminals watch the same symbol you still get each
 tick once: see [Several terminals on one login](several-terminals-on-one-login.md).
+
+## Is this price real?
+
+> Runnable: [`samples/price_check.py`](../samples/price_check.py) reads one forex and one crypto
+> price and judges each as below.
+
+One quote, `client.catalog.quote(broker_id, symbol, server_id=...)`, gives you a price and how old
+it is. Before you act on it:
+
+- **Both sides are there, and the ask is not below the bid.** A missing side, or an ask below the
+  bid, is not a price to trade on.
+- **The bid and the ask differ.** When they are equal the feed may not be a real quote.
+- **`state` is `open`.** Outside its session a quote still answers, with the last price and `state`
+  `closed_session`. See [When a call fails](when-a-call-fails.md#a-market-that-is-closed).
+- **`age_s` is small.** A price a minute old while the market is open has not moved for a minute.
+
+The spread is the ask minus the bid, in the symbol's own price, as decimal strings: build a
+`Decimal` from each side.
 
 ## A quiet channel proves nothing
 

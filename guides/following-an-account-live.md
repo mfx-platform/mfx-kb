@@ -1,3 +1,10 @@
+---
+title: "Following an account live"
+topic: developers
+order: 20
+summary: "Keep balance, equity, margin and every open position current from the stream, for thousands of users at once."
+---
+
 # Following an account live
 
 Your users want to see their balance, equity, margin and every open position's floating profit move

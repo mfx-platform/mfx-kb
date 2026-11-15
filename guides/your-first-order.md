@@ -1,3 +1,10 @@
+---
+title: "Your first order"
+topic: getting-started
+order: 20
+summary: "From nothing to a quote and a filled order, then the position closed and the terminal retired."
+---
+
 # Your first order
 
 This guide goes from nothing to a quote and a filled order, then closes the position and retires
@@ -36,7 +43,8 @@ those names, and takes a farm that offers `order_execution`.
    position it opened.
 6. **Close the position** with `client.execution.close_position(terminal_id, ticket, ...)`, and
    wait for that result the same way.
-7. **Retire the terminal.**
+7. **Retire the terminal**, and wait until it reads `RETIRED` before you start another terminal
+   on the same login (see [a terminal's whole life](a-terminals-whole-life.md#retiring-is-an-intent-not-a-deletion)).
 
 ## What you will see
 

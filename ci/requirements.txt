@@ -197,9 +197,9 @@ idna==3.20 \
     # via
     #   anyio
     #   httpx
-mfx-sdk==0.9.18 \
-    --hash=sha256:796410ecdcbeb7941d7165508fc337f6a2551bbae66d0118590803136920bb37 \
-    --hash=sha256:f088869f3c731670be5290325073778a78d1eccc6e399f9d66736f453c60ca3f
+mfx-sdk==0.16.0 \
+    --hash=sha256:8b977a1cba570eb4d856eee49237aaf6dc5a83e020ba8af11b8613b2b52f4ca5 \
+    --hash=sha256:a281f0d562e8387292e8e4b519325efb3c681653598ec1ab44da9f7410d6f218
     # via -r ci/requirements.in
 pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy' \
     --hash=sha256:a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e \

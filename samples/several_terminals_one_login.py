@@ -14,15 +14,16 @@ process list and no CI log.
 from __future__ import annotations
 
 import argparse
-import os
 import asyncio
 import getpass
+import json
+import os
 import time
 import uuid
 from pathlib import Path
 from typing import Any
 
-from mfx import MfxApiError, MfxClient, Secret, SigningKey
+from mfx import MfxApiError, MfxClient, NotFoundError, Secret, SigningKey
 
 BASE_URL = "https://api.dev.mfxhub.com/v1"
 POLL_S = 5
@@ -34,6 +35,44 @@ LIVE = ("ProcessRunning", "BrokerConnected")
 #: The two limits on terminals per login, as `details.reason` names them.
 PLAN_LIMIT = "login_terminal_limit"
 BROKER_LIMIT = "login_session_limit"
+#: Where a server's sessions per login are final. `probed` is only what the server was seen to
+#: hold, a lower bound: one more may well fit, so the sample still asks.
+KNOWN_CAP = ("limit", "operator")
+#: How long to wait for a terminal you retired to read RETIRED. A drain takes seconds; this is
+#: only the point at which the sample stops waiting and says so.
+RETIRE_WAIT_S = 120
+RETIRE_POLL_S = 2
+# DECISION: no settle time is waited here, after a terminal is retired or before one more is added.
+# RETIRED is the platform's word that the terminal's broker session is gone, and the platform counts
+# the sessions on a login; a pause guessed in a sample would hide a session the platform still
+# counts wrong, and teach every reader a number nobody measured.
+
+
+async def wait_until_retired(
+    client: MfxClient,
+    terminal_id: uuid.UUID | str,
+    *,
+    wait_s: float = RETIRE_WAIT_S,
+    poll_s: float = RETIRE_POLL_S,
+) -> bool:
+    """Wait until a terminal you retired reads RETIRED, or is gone. False if not within ``wait_s``.
+
+    Retiring is accepted at once and the terminal reads DRAINING; it keeps its broker session until
+    its cell has stopped it and it reads RETIRED. On a login whose server allows only so many
+    sessions, wait for RETIRED before you start another terminal on that login.
+    """
+    deadline = time.monotonic() + wait_s
+    while True:
+        try:
+            terminal = await client.terminals.get(terminal_id)
+        except NotFoundError:
+            return True  # nothing is left to hold a session
+        if terminal.state == "RETIRED":
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        await asyncio.sleep(poll_s)
+
 
 def private_key(args: argparse.Namespace) -> str:
     """The API private key: the file named by --private-key-file, else MFX_PRIVATE_KEY."""
@@ -44,6 +83,14 @@ def private_key(args: argparse.Namespace) -> str:
         raise SystemExit("give --private-key-file, or set MFX_PRIVATE_KEY")
     return key.strip()
 
+
+def terminal_labels() -> dict[str, str]:
+    """Labels for every terminal this sample asks for: MFX_TERMINAL_LABELS, a JSON object, when set.
+
+    Optional. Labels are yours to sort and find terminals by; nothing here needs one.
+    """
+    labels = json.loads(os.environ.get("MFX_TERMINAL_LABELS") or "{}")
+    return {str(key): str(value) for key, value in labels.items()}
 
 
 def field(answer: Any, name: str, default: Any = None) -> Any:
@@ -66,6 +113,27 @@ def explain(refused: MfxApiError) -> str:
     return str(refused)
 
 
+async def known_cap(client: MfxClient, server_id: str) -> int | None:
+    """The sessions one login may hold on this server, when that number is final; else None.
+
+    GET /v1/usage lists every enabled server under `per_login.servers`."""
+    try:
+        usage = (await client.usage.get()).to_dict()
+    except MfxApiError as refused:
+        print(f"the server's limit could not be read ({refused}); asking anyway")
+        return None
+    for row in usage.get("per_login", {}).get("servers", []):
+        if str(row["server"]["id"]) == str(server_id) and row.get("max_sessions_source") in KNOWN_CAP:
+            return int(row["max_sessions"])
+    return None
+
+
+def skip(notice: str) -> None:
+    """Say the sample was skipped, not failed: nothing is wrong, there is no room to show it."""
+    print(notice)
+    print(json.dumps({"outcome": "skipped", "notice": notice, "detail": None}))
+
+
 async def add_terminal(client: MfxClient, like: Any) -> Any:
     """Request one more terminal on the same farm, broker and server as `like`."""
     return await client.terminals.create(
@@ -73,6 +141,7 @@ async def add_terminal(client: MfxClient, like: Any) -> Any:
         broker_id=field(like, "broker")["id"],
         server_id=field(like, "server")["id"],
         streaming=bool(field(like, "streaming", False)),
+        labels=terminal_labels(),
         idempotency_key=f"same-login-{uuid.uuid4()}",
     )
 
@@ -131,6 +200,14 @@ async def main() -> None:
     print(f"{args.terminal_id} is {first.state}; yours on its login: "
           f"{field(first, 'same_login_terminals')}")  # fmt: skip
 
+    # One more terminal is one more session on the login. When the server's limit is final and
+    # yours already fill it, the broker would refuse the login: there is nothing to show.
+    cap = await known_cap(client, field(first, "server")["id"])
+    in_use = field(first, "same_login_terminals") or 1
+    if cap is not None and in_use + 1 > cap:
+        skip(f"not added: this server allows {cap} sessions on one login and yours use {in_use}")
+        return
+
     login = int(input("Broker login (the one that terminal already has): "))
     server = input("Broker server: ").strip()
     password = Secret(getpass.getpass("Password: "))
@@ -142,6 +219,7 @@ async def main() -> None:
     except MfxApiError as refused:
         # Nothing was stored. The terminal you requested has no credential; retire it.
         await client.terminals.retire(str(second.id), idempotency_key=f"retire-{uuid.uuid4()}")
+        await wait_until_retired(client, str(second.id))
         raise SystemExit(f"REFUSED: {explain(refused)}") from refused
 
     state = await wait_until_live(client, str(second.id))

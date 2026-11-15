@@ -1,3 +1,10 @@
+---
+title: "Running your own Expert Advisor"
+topic: expert-advisors
+order: 10
+summary: "Send your Expert Advisor's source; MFX Hub checks it, builds it, trials it with trading off, and only then lets it trade."
+---
+
 # Running your own Expert Advisor
 
 > The runnable half of this page is [`samples/expert_advisor.py`](../samples/expert_advisor.py),

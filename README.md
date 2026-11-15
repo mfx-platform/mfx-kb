@@ -19,14 +19,19 @@ sample that stops working fails a build instead of misleading you.
 4. **[Following an account live](guides/following-an-account-live.md)** - balance, equity, margin
    and positions as they move.
 5. **[Following prices live](guides/following-prices-live.md)** and **[reading price history](guides/reading-price-history.md)** -
-   quotes, ticks and bars.
+   quotes, ticks and bars; and the [limits on price history](guides/limits-on-price-history.md),
+   with how to stay clear of them.
 6. **[Sizing a position](guides/sizing-a-position.md)** - decimals, not floats, from risk to lots.
 7. **[When a call fails](guides/when-a-call-fails.md)** - what each error means and when to retry.
 
-Then, as you need them: [several terminals on one login](guides/several-terminals-on-one-login.md),
+Then, as you need them: [pending orders](guides/pending-orders.md),
+[changing a position](guides/changing-a-position.md),
+[several terminals on one login](guides/several-terminals-on-one-login.md),
 [changing a terminal's password](guides/changing-a-terminals-password.md),
-[receiving webhooks](guides/receiving-webhooks.md) and
-[running your own expert advisor](guides/running-your-own-ea.md).
+[receiving webhooks](guides/receiving-webhooks.md),
+[troubleshooting a terminal](guides/troubleshooting-a-terminal.md),
+[running your own expert advisor](guides/running-your-own-ea.md) and
+[protecting an account with rules](guides/protecting-an-account-with-rules.md).
 
 ## Running a sample
 
@@ -56,5 +61,5 @@ variable.
 The guides and samples are licensed under the [Apache License 2.0](LICENSE).
 
 MFX Hub is an independent service and is not affiliated with, endorsed by or sponsored by
-MetaQuotes Ltd. MetaTrader is a trademark of MetaQuotes Ltd., used here only to say which trading
+MetaQuotes Ltd. MetaTrader is a registered trademark of MetaQuotes Ltd., used here only to say which trading
 platform MFX Hub's terminals are compatible with.

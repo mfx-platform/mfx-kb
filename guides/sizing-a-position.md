@@ -1,3 +1,10 @@
+---
+title: "Sizing a position"
+topic: risk
+order: 10
+summary: "Compute a position size from a risk budget and a stop distance in Decimal, never in float."
+---
+
 # Sizing a position
 
 > The runnable half of this page is [`samples/position_sizing.py`](../samples/position_sizing.py),

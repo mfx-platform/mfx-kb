@@ -1,3 +1,10 @@
+---
+title: "Reading price history"
+topic: market-data
+order: 20
+summary: "Read the bars and ticks that already happened, for a chart you are backfilling or a strategy you are warming up."
+---
+
 # Reading price history
 
 > The runnable half of this page is [`samples/price_history.py`](../samples/price_history.py),
@@ -8,9 +15,12 @@ that already happened, for a chart you are backfilling or a strategy you are war
 
 ## Where the history comes from
 
-**From your own broker, through your own terminal.** MFX Hub holds no broker account and keeps no
-price store of its own. When you ask for history, one of your ACTIVE terminals on that broker's
-server reads it from the server and the answer is passed to you. Three things follow.
+**From your own broker, through your own terminal.** MFX Hub holds no broker account. When you ask
+for history, one of your ACTIVE terminals on that broker's server reads it from the server and the
+answer is passed to you. Closed bars read this way are kept in MFX Hub's candle store, and a later
+read of bars the store holds whole is answered from it without touching your terminal; `source` on
+each answer says which (see [limits on price history](limits-on-price-history.md)). Three things
+follow.
 
 - The bars and ticks are exactly the ones your broker shows your account. Two brokers disagree
   about the same minute, and so will two answers.

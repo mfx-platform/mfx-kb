@@ -20,10 +20,10 @@ file holds nothing you would mind losing.
 from __future__ import annotations
 
 import argparse
-import os
 import asyncio
 import getpass
 import json
+import os
 import time
 import uuid
 from pathlib import Path
@@ -48,6 +48,14 @@ def private_key(args: argparse.Namespace) -> str:
         raise SystemExit("give --private-key-file, or set MFX_PRIVATE_KEY")
     return key.strip()
 
+
+def terminal_labels() -> dict[str, str]:
+    """Labels for every terminal this sample asks for: MFX_TERMINAL_LABELS, a JSON object, when set.
+
+    Optional. Labels are yours to sort and find terminals by; nothing here needs one.
+    """
+    labels = json.loads(os.environ.get("MFX_TERMINAL_LABELS") or "{}")
+    return {str(key): str(value) for key, value in labels.items()}
 
 
 def shown(terminal: Any) -> dict[str, Any]:
@@ -143,7 +151,7 @@ async def request(client: MfxClient, instruments: list[str]) -> None:
             streaming=entry["streaming"],
             execution=entry["execution"],
             instruments=wanted,
-            labels={"proof": run},
+            labels={**terminal_labels(), "proof": run},
             idempotency_key=f"lifecycle-{run}-{index}",
         )
         print(f"{entry['broker']}: {terminal.id} {shown(terminal)['state']} watching {wanted}")
@@ -194,6 +202,11 @@ async def main() -> None:
                     raise SystemExit("name the terminals to retire: --terminal <id>, once per terminal")
                 await retire(client, args.terminal)
             if args.phase == "all":
+                # DECISION: no settle time is waited between retire and request. Each terminal
+                # asked for again replaces one just RETIRED, so the login needs no session more
+                # than it had, and RETIRED is the platform's word that the broker session is gone.
+                # A pause guessed here would hide a session still counted wrong, and teach every
+                # reader a number nobody measured.
                 input("Terminals are retired. Press Enter when the cell is ready for new ones... ")
             if args.phase in ("request", "all"):
                 await request(client, instruments)

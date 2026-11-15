@@ -1,0 +1,67 @@
+[
+  {
+    "id": "live.signed_read_is_accepted",
+    "rule": "A real MFX Hub accepts a read the SDK signs with the caller's own key",
+    "source": "Signing",
+    "call": {"op": "terminals.get", "args": {"terminal_id": {"$run": "terminal_id"}}},
+    "observe": {"returns": {"id": {"$run": "terminal_id"}}}
+  },
+  {
+    "id": "live.signed_query_is_accepted",
+    "rule": "A request with a query string is signed over its query and accepted",
+    "source": "Signing",
+    "call": {"op": "terminals.page", "args": {"limit": 1}},
+    "observe": {"returns": {"count": 1}}
+  },
+  {
+    "id": "live.test_key_is_refused",
+    "rule": "A real MFX Hub accepts nothing the published test key signs",
+    "source": "Signing",
+    "client": "test_key",
+    "call": {"op": "terminals.get", "args": {"terminal_id": {"$run": "terminal_id"}}},
+    "observe": {"raises": "AuthError", "fields": {"status": 401}}
+  },
+  {
+    "id": "live.unknown_terminal_is_not_found",
+    "rule": "A terminal id the tenant does not have is not_found, raised as its typed error",
+    "source": "Errors",
+    "call": {"op": "terminals.get", "args": {"terminal_id": {"$run": "unused_id"}}},
+    "observe": {"raises": "NotFoundError", "fields": {"status": 404, "code": "not_found"}}
+  },
+  {
+    "id": "live.list_follows_the_cursor",
+    "rule": "A list read one item a page follows the cursor to the end and finds every terminal",
+    "source": "Pagination",
+    "call": {"op": "terminals.list", "args": {"limit": 1}},
+    "observe": {"includes": {"ids": {"$run": "terminal_id"}}}
+  },
+  {
+    "id": "live.price_is_an_exact_decimal",
+    "rule": "A quote's bid and ask arrive as exact decimals, never binary floats",
+    "source": "Decimals",
+    "call": {"op": "catalog.quote", "args": {"broker_id": {"$run": "broker_id"}, "symbol": {"$run": "symbol"}, "server_id": {"$run": "server_id"}}},
+    "observe": {"exact": ["bid", "ask"]}
+  },
+  {
+    "id": "live.float_volume_is_refused",
+    "rule": "A binary floating-point volume is refused before anything is sent, on a real hub too",
+    "source": "Decimals",
+    "call": {"op": "execution.place_order", "args": {"terminal_id": {"$run": "terminal_id"}, "symbol": {"$run": "symbol"}, "side": "buy", "volume": {"$float": 0.21000000000000002}, "idempotency_key": {"$run": "new_key"}}},
+    "observe": {"refuses": "invalid_argument"}
+  },
+  {
+    "id": "live.repeated_key_is_the_original",
+    "rule": "An order sent again with the same idempotency key is the original command, never a second order",
+    "source": "Idempotency",
+    "call": {"op": "execution.place_order", "args": {"terminal_id": {"$run": "terminal_id"}, "symbol": {"$run": "symbol"}, "side": "buy", "volume": {"$run": "min_volume"}, "idempotency_key": {"$run": "new_key"}}},
+    "observe": {"repeat": {"returns": {"duplicate": true}, "same": ["command_id"]}}
+  },
+  {
+    "id": "live.ticks_arrive_in_seq_order",
+    "rule": "Ticks on a channel arrive with seq rising, and none the seq proves missing",
+    "source": "WebSocket stream",
+    "needs": ["market"],
+    "call": {"op": "stream.read", "args": {"channels": [{"$run": "md_channel"}], "count": 3}},
+    "observe": {"ascending": "seqs", "returns": {"dropped": 0}}
+  }
+]

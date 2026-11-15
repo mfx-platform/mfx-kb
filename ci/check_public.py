@@ -39,10 +39,25 @@ INTERNAL = re.compile(
 
 #: One lower-case name a line, ``#`` starts a comment. Absent in the public repository.
 NAMES_FILE = REPO / "ci" / "internal-names.txt"
+#: Tracked here, never published: the export leaves these out, so they are not checked. One list,
+#: read by ``export_public`` too, so the check and the export cannot disagree.
+PRIVATE = frozenset(
+    {
+        "AGENTS.md",
+        "ci/internal-names.txt",
+        "ci/export_public.py",
+        "ci/publish_release.py",
+        "ci/build_release.py",
+        "ci/release-requirements.in",
+        "ci/release-requirements.txt",
+        "ci/tests/test_build_release.py",
+        ".github/workflows/publish.yml",
+    }
+)
 
-_TEXT = (".py", ".md", ".txt", ".toml", ".json", ".yaml", ".yml", ".mq5", ".mqh", ".ini", ".cfg")
+_TEXT = (".py", ".ts", ".mjs", ".md", ".txt", ".toml", ".json", ".yaml", ".yml", ".mq5", ".mqh", ".ini", ".cfg")
 _TEXT_NAMES = ("LICENSE", "CODEOWNERS", ".gitignore")
-_SKIP = frozenset({".git", ".venv", "dist", "build", "__pycache__", ".pytest_cache", ".ruff_cache"})
+_SKIP = frozenset({".git", ".venv", "dist", "build", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules"})
 _TOKEN = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 
@@ -93,8 +108,8 @@ def _tracked(repo: Path) -> Iterator[tuple[str, str]]:
     ).stdout
     for name in listed.splitlines():
         path = repo / name
-        if path.resolve() == NAMES_FILE.resolve():
-            continue  # the names themselves: private, and left out of the export
+        if name in PRIVATE:
+            continue  # tracked here, never published: the export leaves it out
         if path.is_file() and _text(path.name):
             yield name, path.read_text(encoding="utf-8", errors="replace")
 

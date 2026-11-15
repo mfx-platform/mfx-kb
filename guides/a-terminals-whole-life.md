@@ -1,3 +1,10 @@
+---
+title: "A terminal's whole life"
+topic: accounts
+order: 10
+summary: "Every state a terminal goes through, what to do in each, and how to retire terminals and ask for them again."
+---
+
 # A terminal's whole life
 
 The sample this guide follows is
@@ -73,6 +80,12 @@ reports that the terminal has stopped, so poll until then. Three things worth kn
 - A terminal that is on its way to a cell (`PROVISIONING`, `LOGGING_IN`) answers **409** for now.
   Wait until it settles, then retire it.
 - A `REQUESTED` or `FAILED` terminal has nothing running, so it is `RETIRED` immediately.
+
+**A `DRAINING` terminal still holds its broker session.** The session ends only when the terminal
+reads `RETIRED`, usually seconds later. If your broker's server allows only so many sessions on one
+login, wait for `RETIRED` before you start another terminal on that login, or the new one is
+refused because the login's sessions are all in use. The samples that retire a terminal poll every
+two seconds and stop waiting after two minutes, saying so, rather than hang.
 
 ## Asking again
 

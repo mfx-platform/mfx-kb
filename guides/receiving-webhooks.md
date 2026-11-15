@@ -1,3 +1,10 @@
+---
+title: "Receiving webhooks"
+topic: developers
+order: 30
+summary: "Have MFX Hub call your own HTTPS address for the events you asked for, without holding a stream open."
+---
+
 # Receiving webhooks
 
 > The runnable half of this page is [`samples/webhook_receiver.py`](../samples/webhook_receiver.py).

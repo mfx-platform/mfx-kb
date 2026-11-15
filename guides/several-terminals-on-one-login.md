@@ -1,3 +1,10 @@
+---
+title: "Several terminals on one broker login"
+topic: accounts
+order: 30
+summary: "Run more than one terminal on the same broker login, and plan for the account they share."
+---
+
 # Several terminals on one broker login
 
 > Runs against the dev environment today, where adding a second terminal to a login was run on
@@ -95,6 +102,16 @@ its first minutes are watched:
 Only one such check runs on a broker server at a time. While it runs, another request for one more
 session on that server answers **409 `placement_error`** with `details.retry_after_s`. Wait that
 long and submit again.
+
+What MFX Hub knows of each server is in `GET /v1/usage`, under `per_login.servers`: `max_sessions`
+and where it comes from, `max_sessions_source`. `probed` is how many the server was seen to hold, a
+lower bound, so one more may still fit; `limit` and `operator` are final. The sample reads it
+before it asks, and stops, skipped rather than failed, when the limit is final and yours already
+fill it:
+
+```python
+if cap is not None and in_use + 1 > cap:
+```
 
 ## How many of yours share a login
 

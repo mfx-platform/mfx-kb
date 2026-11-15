@@ -1,3 +1,10 @@
+---
+title: "Changing a terminal's password"
+topic: accounts
+order: 20
+summary: "When your broker password changes or was wrong, submit the credential again and keep the same terminal."
+---
+
 # Changing a terminal's password
 
 > Runs against the dev environment today, where every path below was run on 2 October 2026, and a

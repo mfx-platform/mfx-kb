@@ -28,10 +28,12 @@ import argparse
 import os
 import asyncio
 import hashlib
+import json
 import uuid
 from pathlib import Path
 
 from mfx import MfxClient, SigningKey
+from mfx.errors import ConflictError
 
 BASE_URL = "https://api.dev.mfxhub.com/v1"
 HERE = Path(__file__).resolve().parent
@@ -72,14 +74,24 @@ async def run(client: MfxClient, args: argparse.Namespace) -> None:
     if version.state.value != "approved" or args.terminal_id is None:
         return
 
-    accepted = await client.terminals.attach_expert_advisor(
-        args.terminal_id,
-        version.id,
-        symbol=args.symbol,
-        timeframe=args.timeframe,
-        reason="run my expert advisor",
-        idempotency_key=f"attach-{uuid.uuid4()}",
-    )
+    try:
+        accepted = await client.terminals.attach_expert_advisor(
+            args.terminal_id,
+            version.id,
+            symbol=args.symbol,
+            timeframe=args.timeframe,
+            reason="run my expert advisor",
+            idempotency_key=f"attach-{uuid.uuid4()}",
+        )
+    except ConflictError as refused:
+        if refused.code != "not_customer_code_farm":
+            raise
+        # Only a farm that runs customer code carries an expert. The version is checked and kept:
+        # attach it to a terminal on such a farm. Said as skipped, not failed: nothing is wrong.
+        notice = "not attached: this needs a terminal on a farm that runs customer code"
+        print(notice)
+        print(json.dumps({"outcome": "skipped", "notice": notice, "detail": None}))
+        return
     operation = await client.terminals.wait_for_operation(args.terminal_id, accepted.operation_id)
     print(f"attach: {operation.state.value}")
     if operation.state.value != "SUCCEEDED":

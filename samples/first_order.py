@@ -18,13 +18,55 @@ from __future__ import annotations
 import argparse
 import asyncio
 import getpass
+import json
 import os
+import time
 import uuid
+from typing import Any
 
 import mfx
-from mfx import MfxClient, SigningKey
+from mfx import MfxClient, NotFoundError, SigningKey
 
 BASE_URL = os.environ.get("MFX_BASE_URL", "https://api.dev.mfxhub.com/v1")
+#: How long to wait for a terminal you retired to read RETIRED. A drain takes seconds; this is
+#: only the point at which the sample stops waiting and says so.
+RETIRE_WAIT_S = 120
+RETIRE_POLL_S = 2
+
+
+async def wait_until_retired(
+    client: MfxClient,
+    terminal_id: uuid.UUID | str,
+    *,
+    wait_s: float = RETIRE_WAIT_S,
+    poll_s: float = RETIRE_POLL_S,
+) -> bool:
+    """Wait until a terminal you retired reads RETIRED, or is gone. False if not within ``wait_s``.
+
+    Retiring is accepted at once and the terminal reads DRAINING; it keeps its broker session until
+    its cell has stopped it and it reads RETIRED. On a login whose server allows only so many
+    sessions, wait for RETIRED before you start another terminal on that login.
+    """
+    deadline = time.monotonic() + wait_s
+    while True:
+        try:
+            terminal = await client.terminals.get(terminal_id)
+        except NotFoundError:
+            return True  # nothing is left to hold a session
+        if terminal.state == "RETIRED":
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        await asyncio.sleep(poll_s)
+
+
+def terminal_labels() -> dict[str, str]:
+    """Labels for every terminal this sample asks for: MFX_TERMINAL_LABELS, a JSON object, when set.
+
+    Optional. Labels are yours to sort and find terminals by; nothing here needs one.
+    """
+    labels = json.loads(os.environ.get("MFX_TERMINAL_LABELS") or "{}")
+    return {str(key): str(value) for key, value in labels.items()}
 
 
 async def find_ids(client: MfxClient, broker: str, server: str) -> tuple[str, str, str, set[str]]:
@@ -59,6 +101,34 @@ async def find_ids(client: MfxClient, broker: str, server: str) -> tuple[str, st
     return str(farm.id), str(broker_row.id), str(server_row.id), offers
 
 
+
+async def priced(
+    client: MfxClient, broker_id: str, symbol: str, server_id: str
+) -> tuple[Any, str | None]:
+    """The symbol's quote, and the account type it was asked under. A server may list one symbol
+    under several account types; a quote that names none is then refused as ambiguous, so it is
+    asked again under each listing's account type until one answers."""
+    try:
+        return await client.catalog.quote(broker_id, symbol, server_id=server_id), None
+    except mfx.MfxApiError as refused:
+        if refused.code != "ambiguous_symbol":
+            raise
+        last = refused
+    cursor = None
+    while True:
+        page = await client.catalog.symbols(broker_id, server_id=server_id, cursor=cursor, limit=200)
+        for listed in (s for s in page.items if s.symbol == symbol and s.account_type):
+            try:
+                quote = await client.catalog.quote(broker_id, symbol, server_id=server_id,
+                                                   account_type=listed.account_type)  # fmt: skip
+            except mfx.MfxApiError as refused:
+                last = refused
+                continue
+            return quote, listed.account_type
+        cursor = page.next_cursor
+        if not cursor:
+            raise last
+
 async def main(symbol: str, confirm: bool) -> None:
     run = uuid.uuid4().hex[:8]  # one run, one set of idempotency keys: a retry repeats nothing
     async with MfxClient(
@@ -76,6 +146,7 @@ async def main(symbol: str, confirm: bool) -> None:
             streaming="quote_streaming" in offers,
             execution="order_execution" in offers,
             instruments=[symbol],  # the broker's own symbol names
+            labels=terminal_labels(),
             idempotency_key=f"first-order-terminal-{run}",
         )
         try:
@@ -96,14 +167,15 @@ async def main(symbol: str, confirm: bool) -> None:
             print(f"terminal {terminal.id} is ACTIVE")
 
             # 2. A quote, always with its age. broker_time is the broker's clock, not UTC.
-            quote = await client.catalog.quote(broker_id, symbol, server_id=server_id)
+            quote, account_type = await priced(client, broker_id, symbol, server_id)
             print(f"{symbol} bid {quote.bid} ask {quote.ask}, {quote.age_s:.1f} s old")
             if not confirm:
                 print("not placing an order: pass --confirm to buy the smallest volume and close it")
                 return
 
             # 3. The smallest volume the symbol allows, as a decimal string.
-            spec = await client.catalog.symbol(broker_id, symbol, server_id=server_id)
+            spec = await client.catalog.symbol(broker_id, symbol, server_id=server_id,
+                                   account_type=account_type)
             volume = str(spec.volume_min)
             placed = await client.execution.place_order(
                 terminal.id,
@@ -127,7 +199,10 @@ async def main(symbol: str, confirm: bool) -> None:
         finally:
             # 5. Retire the terminal, whatever happened above.
             await client.terminals.retire(terminal.id, idempotency_key=f"first-order-retire-{run}")
-            print("terminal retired")
+            if await wait_until_retired(client, terminal.id):
+                print("terminal retired")
+            else:
+                print(f"not RETIRED after {RETIRE_WAIT_S} s: it may still hold its broker session")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,10 @@
+---
+title: "Your first terminal"
+topic: getting-started
+order: 10
+summary: "From an API key to a terminal that is ACTIVE, and then retired."
+---
+
 # Your first terminal
 
 A terminal is one trading terminal session, compatible with MetaTrader 5, that MFX Hub runs for you: it logs in to your broker with your
@@ -34,7 +41,8 @@ The API takes ids, not names. The sample looks them up for you, in three calls:
 3. **Submit the credential.** It is stored by reference; the terminal can log in from now on.
 4. **Wait for `ACTIVE`.** It passes through `PROVISIONING` (a cell is preparing it) and `LOGGING_IN`
    (the broker is answering). `conditions` say why if it stalls — never guess from the state alone.
-5. **Retire it** when you are done. It drains (`DRAINING`) and then it is `RETIRED`.
+5. **Retire it** when you are done. It drains (`DRAINING`) and then it is `RETIRED`; the sample
+   waits for `RETIRED`, because until then the terminal still holds its broker session.
 
 The whole flow is one runnable file: [`samples/first_terminal.py`](../samples/first_terminal.py).
 

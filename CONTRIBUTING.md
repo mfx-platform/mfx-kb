@@ -18,6 +18,11 @@ something useful are all welcome.
   sample must work exactly as the guide that quotes it says. `python -m compileall samples` passes.
 - **A guide quotes real files.** A guide links to its sample by relative path
   (`../samples/name.py`), and CI fails if the file does not exist.
+- **Every guide and question opens with front matter.** A guide (`guides/*.md`) gives its `title`
+  (the same text as its `# ` heading), `topic`, `order` and a one-sentence `summary`; a question
+  (`faq/*.md`, one question a file) gives its `question`, `topic`, `order` and, optionally, the
+  `guide` it relates to. Topics are the slugs in [`topics.yaml`](topics.yaml), which holds one list
+  for guides and one for questions. `python ci/check_content.py` checks all of it.
 - **Secrets stay out.** Samples read the API key from the environment or a file you name, and ask
   for a broker password at a prompt. Never put a key, a login or a password in a sample, a guide or
   an issue.

@@ -1,0 +1,47 @@
+# The topics the guides and the FAQs are grouped by, in the order a reader meets them. The website
+# and the customer portal read this one file, so both show the same groups.
+#
+# Two lists, because a guide and a question are grouped differently:
+#   guides: what `topic:` in a guide's front matter (guides/*.md) may name
+#   faq:    what `topic:` in a question's front matter (faq/*.md) may name
+#
+# Each entry is a slug (what front matter names), a label (what a reader sees) and an order
+# (lowest first). Keep to this shape: ci/check_content.py reads it without a YAML library.
+guides:
+  - slug: getting-started
+    label: Getting started
+    order: 10
+  - slug: trading
+    label: Orders and positions
+    order: 20
+  - slug: accounts
+    label: Accounts and brokers
+    order: 30
+  - slug: market-data
+    label: Market data
+    order: 40
+  - slug: developers
+    label: Developers and SDKs
+    order: 50
+  - slug: expert-advisors
+    label: Expert advisors
+    order: 60
+  - slug: risk
+    label: Risk management
+    order: 70
+faq:
+  - slug: the-service
+    label: The service
+    order: 10
+  - slug: security
+    label: Security
+    order: 20
+  - slug: reliability
+    label: Reliability
+    order: 30
+  - slug: developers
+    label: Developers
+    order: 40
+  - slug: expert-advisors
+    label: Expert advisors
+    order: 50

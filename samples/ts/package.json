@@ -1,0 +1,21 @@
+{
+  "name": "mfx-hub-samples-typescript",
+  "private": true,
+  "description": "The knowledge base's runnable samples, in TypeScript",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mfxhub/sdk": "0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/ws": "8.18.2",
+    "typescript": "5.9.3"
+  }
+}
